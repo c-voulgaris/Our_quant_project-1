@@ -1,0 +1,165 @@
+---
+title: "Mexico project"
+author: "Olufemi Olamijulo"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+install.packages("ipumsr")
+
+```
+
+
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+library(readxl)
+library(knitr)
+library(ipumsr)
+library(srvyr)
+```
+```{r}
+#A research question you could answer using regression analysis on this dataset
+
+#We are looking to explore possible correlation between levels of income of the head of Household with number of children and number of people in each household and if there is a trend over years (between 1990 to 2015 in rural & urban areas)
+
+#Citations for two research articles that address a question related to the one you’ve identified.
+#Tuirán, R., Partida, Mojarro, O., & Zúñiga, E. (2004). Fertility in Mexico: trends and forecast.https://www.un.org/development/desa/pd/sites/www.un.org.development.desa.pd/files/unpd_egm_200203_countrypapers_fertility_in_mexico_tuiran_partida_mojarro_zuniga.pdf
+
+#Cummings, P.M. (2016). Child Labor and Household Composition : Determinants of Child Labor in Mexico.
+
+#The definition of your sample population (e.g. who is included and who isn't).
+#This sample includes Data at the Household level - The data has been cleanedup and filtered down to persons with a 1st position in each household - This is assumed to be the head of teh family, but we admit that this interpretation may not always be true. Other incomes from other members of the household have been excluded. It also look at data from years 1990 and 2015 only.
+
+#The variables you'll include in your analysis. You must include at least two categorical variables and at least three continuous variables.
+#The varables we are interested in include Year (Categorical), State (categorical), Development (Categorical), Income per household (Continuous), number of children(Continuous) and number of residents in per household (Continuous)for the years (1990 & 2015).
+
+#The number of observations (rows) in your dataset.
+#We have a cleanedup summary of our data set with 64 observations - (2 separate data years for all 32 states)
+#The number of observations for the complete dataset is 4,575,476 rows. 
+
+```
+
+
+```{r}
+ddi <- read_ipums_ddi("ipumsi_00001.xml")
+data <- read_ipums_micro(ddi)
+
+```
+
+```{r}
+Household <- filter(data, PERNUM == 1)
+```
+
+```{r}
+Household$URBAN <- as.character(Household$URBAN)
+
+```
+
+
+
+```{r}
+Household$LIT
+```
+
+```{r}
+Household <- Household%>%
+  mutate(State = case_when(GEO1_MX == 484001 ~ "Aguascalientes",
+                                 GEO1_MX == 484002 ~ "Baja California",
+                           GEO1_MX == 484003 ~ "Baja California Sur",
+                           GEO1_MX == 484004 ~ "Campeche",
+                                 GEO1_MX == 484005 ~ "Coahuila de Zaragoza",
+                           GEO1_MX == 484006 ~ "Colima",
+                           GEO1_MX == 484007 ~ "Chiapas",
+                                 GEO1_MX == 484008 ~ "Chihuahua",
+                           GEO1_MX == 484009 ~ "Distrito Federal",
+                           GEO1_MX == 484010 ~ "Durango",
+                                 GEO1_MX == 484011 ~ "Guanajuato",
+                           GEO1_MX == 484012 ~ "Guerrero",
+                           GEO1_MX == 484013 ~ "Hidalgo",
+                                 GEO1_MX == 484014 ~ "Jalisco",
+                           GEO1_MX == 484015 ~ "México",
+                           GEO1_MX == 484016 ~ "Michoacán de Ocampo",
+                                 GEO1_MX == 484017 ~ "Morelos",
+                           GEO1_MX == 484018 ~ "Nayarit",
+                           GEO1_MX == 484019 ~ "Nuevo León",
+                                 GEO1_MX == 484020 ~ "Oaxaca",
+                           GEO1_MX == 484021 ~ "Puebla",
+                           GEO1_MX == 484022 ~ "Querétaro",
+                                 GEO1_MX == 484023 ~ "Quintana Roo",
+                           GEO1_MX == 484024 ~ "San Luis Potosí",
+                           GEO1_MX == 484025 ~ "Sinaloa",
+                                 GEO1_MX == 484026 ~ "Sonora",
+                           GEO1_MX == 484027 ~ "Tabasco",
+                           GEO1_MX == 484028 ~ "Tamaulipas",
+                                 GEO1_MX == 484029 ~ "Tlaxcala",
+                           GEO1_MX == 484030 ~ "Veracruz de Ignacio de la Llave",
+                           GEO1_MX == 484031 ~ "Yucatán",
+                                 GEO1_MX == 484032 ~ "Zacatecas"
+                           ))
+```
+```{r}
+Household <- Household%>%
+mutate(Development = case_when(URBAN == 1 ~ "Rural",
+                                 GEO1_MX == 2 ~ "Urban",
+                           GEO1_MX == 9 ~ "Unknown"))
+```
+
+```{r}
+Household <- Household%>%
+mutate(Literacy = case_when(LIT == 1 ~ "Illiterate",
+                                 GEO1_MX == 2 ~ "Literate",
+                           GEO1_MX == 9 ~ "Unknown"))
+
+```
+
+
+```{r}
+CleanupMX <- Household
+select(CleanupMX, -c(URBAN,GEO1_MX, PERNUM, LIT))
+Mexicodata <- CleanupMX[,c("YEAR", "State", "Development",
+               "Literacy", "INCEARN", "NCHILD","PERSONS")]
+
+Completedataset <-Mexicodata %>%filter(YEAR %in% c(1990, 2015))
+  
+
+```
+
+```{r}
+Mexicodata%>%
+  filter(YEAR %in% c(1990, 2015))%>%
+  group_by(YEAR, State) %>%
+  summarize(development = first(Development),
+              Average_income = mean(INCEARN, na.rm = TRUE),
+            Total_children = sum(NCHILD, na.rm = TRUE),
+            Average_house_occupancy = mean(PERSONS))
+  
+```
+
+
